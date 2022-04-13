@@ -136,7 +136,7 @@ def handleHttp(host, header, method, contentype, scode, path, filter, timeout, w
                     # response statuscode satisfy
                     content = response.text + str(response.headers)
                     if content.find(filter):
-                        # 如何保存等待解决
+                        # 如何保存等待以后解决
                         print("\033[1;33;44m[命中] HIT!\033[0m {0}".format(url))
                         with open(workplace, 'a') as f:
                             f.write(url + '\n')
