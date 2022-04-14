@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
@@ -94,11 +95,11 @@ INDEX = 0
 def printAll(url):
     try:
         response = requests.get(url, headers=headers, timeout=timeout, proxies=proxies)
-        print('\033[47m[{0}]\033[0m {1}'.format(response.status_code, url))
+        print('{1} \033[1;32m({0})\033[0m '.format(response.status_code, url))
         # INDEX += 1
         # Oh my god, it's worst!
     except Exception as e:
-        print(e)
+        print(url + '\033[1;31m (Timeout) \033[0m')
 
 
 def handleHttp(host, header, method, contentype, scode, path, filter, timeout, workplace, data=None, proxy=None):
@@ -120,10 +121,11 @@ def handleHttp(host, header, method, contentype, scode, path, filter, timeout, w
                         content = response.text + str(response.headers)
                         if response.text.find(filter):
                             # 如何保存等待解决
-                            print("\033[1;33;44m[命中] HIT!\033[0m {0}".format(url))
+                            print("{0} \033[1;33m[命中] HIT!\033[0m ".format(url))
                             with open(workplace, 'a') as f:
                                 f.write(url + '\n')
                                 f.close()
+
 
         elif method == 'POST':
             if scode == 0:
@@ -137,18 +139,18 @@ def handleHttp(host, header, method, contentype, scode, path, filter, timeout, w
                     content = response.text + str(response.headers)
                     if content.find(filter):
                         # 如何保存等待以后解决
-                        print("\033[1;33;44m[命中] HIT!\033[0m {0}".format(url))
+                        print("{0} \033[1;33m[命中] HIT!\033[0m".format(url))
                         with open(workplace, 'a') as f:
                             f.write(url + '\n')
                             f.close()
-                elif scode:
-                    print('[{0}] {1}'.format(response.status_code, url))
 
 
 def main():
     parseParameter()
+    os.remove(workplace)
+    # First is delete last result
     obj_list = []
-    with ThreadPoolExecutor(20) as executor:
+    with ThreadPoolExecutor(thread) as executor:
         for host in host_lists:
             obj = executor.submit(handleHttp, host, header, method, contentype, scode, path, filter, timeout, workplace,
                                   data, proxies)
