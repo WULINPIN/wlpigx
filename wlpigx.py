@@ -1,6 +1,8 @@
+# -*- coding: UTF-8 -*-
 import argparse
 import json
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
@@ -95,7 +97,11 @@ INDEX = 0
 def printAll(url):
     try:
         response = requests.get(url, headers=headers, timeout=timeout, proxies=proxies)
-        print('{1} \033[1;32m({0})\033[0m '.format(response.status_code, url))
+        title = re.findall(r"<title.*?>(.+?)</title>", response.text, re.S)
+        title = ''.join(title).strip()
+        print('{1}, \033[1;32m({0})\033[0m Content-Length: {2},Title: [{3}]'.format(response.status_code, url,
+                                                                                    response.headers['Content-Length'],
+                                                                                    title))
         # INDEX += 1
         # Oh my god, it's worst!
     except Exception as e:
@@ -114,6 +120,9 @@ def handleHttp(host, header, method, contentype, scode, path, filter, timeout, w
             # response = requests.get(url, headers=headers, timeout=timeout, proxies=proxise)
             else:
                 response = requests.get(url, headers=headers, timeout=timeout, proxies=proxy)
+                contentL = response.headers['Content-Length']
+                title = re.findall(r"<title.*?>(.*?)</title>", response.text, re.S)
+                title = ''.join(title).strip()
                 if contentype and contentype in response.headers['Content-Type']:
                     # response content-type satisfy
                     if response.status_code == scode:
@@ -123,7 +132,7 @@ def handleHttp(host, header, method, contentype, scode, path, filter, timeout, w
                             # 如何保存等待解决
                             print("{0} \033[1;33m[命中] HIT!\033[0m ".format(url))
                             with open(workplace, 'a') as f:
-                                f.write(url + '\n')
+                                f.write(url + ' ' + contentL + ' [' + title + ']' + '\n')
                                 f.close()
 
 
@@ -132,6 +141,8 @@ def handleHttp(host, header, method, contentype, scode, path, filter, timeout, w
                 printAll(url)
             # response = requests.post(url, data='test', headers=headers, timeout=timeout, proxies=proxise)
             response = requests.post(url, data=data, headers=headers, timeout=timeout, proxies=proxy)
+            contentL = response.headers['Content-Length']
+            title = re.findall(r"<title.*?>(.*?)</title>", response.text, re.S)
             if contentype and contentype in response.headers['Content-Type']:
                 # response content-type satisfy
                 if response.status_code == scode:
@@ -141,13 +152,14 @@ def handleHttp(host, header, method, contentype, scode, path, filter, timeout, w
                         # 如何保存等待以后解决
                         print("{0} \033[1;33m[命中] HIT!\033[0m".format(url))
                         with open(workplace, 'a') as f:
-                            f.write(url + '\n')
+                            f.write(url + ' ' + contentL + ' [' + title + ']' + '\n')
                             f.close()
 
 
 def main():
     parseParameter()
-    os.remove(workplace)
+    if os.path.exists(workplace):
+        os.remove(workplace)
     # First is delete last result
     obj_list = []
     with ThreadPoolExecutor(thread) as executor:
